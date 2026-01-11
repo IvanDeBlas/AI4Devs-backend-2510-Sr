@@ -50,4 +50,38 @@ export class Application {
         if (!data) return null;
         return new Application(data);
     }
+
+    static async findByCandidateId(candidateId: number): Promise<Application | null> {
+        const data = await prisma.application.findFirst({
+            where: { candidateId: candidateId },
+        });
+        if (!data) return null;
+        return new Application(data);
+    }
+
+    static async updateStage(candidateId: number, newStage: number): Promise<Application | null> {
+        // Verify the interview step exists
+        const interviewStep = await prisma.interviewStep.findUnique({
+            where: { id: newStage },
+        });
+        if (!interviewStep) {
+            throw new Error('Interview step not found');
+        }
+
+        // Find the application for this candidate
+        const application = await prisma.application.findFirst({
+            where: { candidateId: candidateId },
+        });
+        if (!application) {
+            return null;
+        }
+
+        // Update the current interview step
+        const updated = await prisma.application.update({
+            where: { id: application.id },
+            data: { currentInterviewStep: newStage },
+        });
+
+        return new Application(updated);
+    }
 }

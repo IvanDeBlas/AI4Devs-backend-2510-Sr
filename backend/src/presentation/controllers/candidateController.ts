@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { addCandidate, findCandidateById } from '../../application/services/candidateService';
+import { addCandidate, findCandidateById, updateCandidateStage } from '../../application/services/candidateService';
 
 export const addCandidateController = async (req: Request, res: Response) => {
     try {
@@ -27,6 +27,38 @@ export const getCandidateById = async (req: Request, res: Response) => {
         }
         res.json(candidate);
     } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+export const updateCandidateStageController = async (req: Request, res: Response) => {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'Invalid ID format' });
+        }
+
+        const { stage } = req.body;
+        if (stage === undefined || stage === null) {
+            return res.status(400).json({ error: 'Stage is required' });
+        }
+
+        const stageNumber = parseInt(stage);
+        if (isNaN(stageNumber)) {
+            return res.status(400).json({ error: 'Invalid stage format' });
+        }
+
+        const updatedApplication = await updateCandidateStage(id, stageNumber);
+        res.json({ message: 'Stage updated successfully', data: updatedApplication });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            if (error.message === 'Candidate not found' || error.message === 'Application not found for this candidate') {
+                return res.status(404).json({ error: error.message });
+            }
+            if (error.message === 'Interview step not found') {
+                return res.status(400).json({ error: error.message });
+            }
+        }
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
